@@ -24,11 +24,11 @@ parameter IO_PINS = IN_PINS + OUT_PINS;
 reg clk;
 wire wb_clk_i = clk;
 reg wb_rst_i;
-reg wb_stb_i;
-reg wb_cyc_i;
-reg wb_we_i;
-reg [WB_WIDTH-1:0] wb_adr_i;
-reg [WB_WIDTH-1:0] wb_dat_i;
+reg wbs_stb_i;
+reg wbs_cyc_i;
+reg wbs_we_i;
+reg [WB_WIDTH-1:0] wbs_adr_i;
+reg [WB_WIDTH-1:0] wbs_dat_i;
 wire wbs_ack_o;
 wire [WB_WIDTH-1:0] wbs_dat_o;
 reg [LOGIC_PROBES-1:0] la_data_in;
@@ -55,11 +55,11 @@ mcu #(
 ) mcu_dut (
    .wb_clk_i(wb_clk_i),
    .wb_rst_i(wb_rst_i),
-   .wb_stb_i(wb_stb_i),
-   .wb_cyc_i(wb_cyc_i),
-   .wb_we_i(wb_we_i),
-   .wb_adr_i(wb_adr_i),
-   .wb_dat_i(wb_dat_i),
+   .wbs_stb_i(wbs_stb_i),
+   .wbs_cyc_i(wbs_cyc_i),
+   .wbs_we_i(wbs_we_i),
+   .wbs_adr_i(wbs_adr_i),
+   .wbs_dat_i(wbs_dat_i),
    .wbs_ack_o(wbs_ack_o),
    .wbs_dat_o(wbs_dat_o),
    .la_data_in(la_data_in),
@@ -79,60 +79,60 @@ always #5 clk = ~clk;
 
 initial begin
    $monitor("time %4t rh %1b rs %1b wwei %1b wai %32b pdi %4b pdo %4b",
-               $time, la_data_out[1], la_data_out[2], wb_we_i, wb_adr_i, pin_data_in, pin_data_out);
+               $time, la_data_out[1], la_data_out[2], wbs_we_i, wbs_adr_i, pin_data_in, pin_data_out);
    // power up
    clk = 0;
    wb_rst_i = 1;
-   wb_stb_i = 0;
-   wb_cyc_i = 0;
-   wb_we_i = 0;
-   wb_adr_i = 0;
-   wb_dat_i = 0;
+   wbs_stb_i = 0;
+   wbs_cyc_i = 0;
+   wbs_we_i = 0;
+   wbs_adr_i = 0;
+   wbs_dat_i = 0;
    la_data_in = {(LOGIC_PROBES){1'b0}};
    la_oenb = {(LOGIC_PROBES){1'b1}};
    pin_data_in = 4'b0000;
    #10
    // wishbone reset off, start communications
    wb_rst_i = 0;
-   wb_stb_i = 1;
-   wb_cyc_i = 1;
-   wb_we_i = 1;
+   wbs_stb_i = 1;
+   wbs_cyc_i = 1;
+   wbs_we_i = 1;
    // programming mode
-   wb_adr_i = 32'b01_000000000000000000000000000000;           // set programming mode
-   wb_dat_i = 32'b00000000000000000000000000000001;            // to 1
+   wbs_adr_i = 32'b01_000000000000000000000000000000;          // set programming mode
+   wbs_dat_i = 32'b00000000000000000000000000000001;           // to 1
    #10
    // send code for cpu core 0
-   wb_adr_i = 32'b00_00000000000000000000000000_0_000;         // address 0:
-   wb_dat_i = 32'b100_000_1_00_0011_100_0000000000001111;      // read value from memory cell 15 (joined input)
+   wbs_adr_i = 32'b00_00000000000000000000000000_0_000;        // address 0:
+   wbs_dat_i = 32'b100_000_1_00_0011_100_0000000000001111;     // read value from memory cell 15 (joined input)
    #10
-   wb_adr_i = 32'b00_00000000000000000000000000_0_001;         // address 1:
-   wb_dat_i = 32'b011_000_1_11_0011_111_0000000000000001;      // write value to memory cell 0, spread 1
+   wbs_adr_i = 32'b00_00000000000000000000000000_0_001;        // address 1:
+   wbs_dat_i = 32'b011_000_1_11_0011_111_0000000000000001;     // write value to memory cell 0, spread 1
    #10
-   wb_adr_i = 32'b00_00000000000000000000000000_0_010;         // address 2:
-   wb_dat_i = 32'b100_000_1_00_0011_011_0000000000000000;      // jump to address 0
+   wbs_adr_i = 32'b00_00000000000000000000000000_0_010;        // address 2:
+   wbs_dat_i = 32'b100_000_1_00_0011_011_0000000000000000;     // jump to address 0
    #10
    // send code for cpu core 1
-   wb_adr_i = 32'b00_00000000000000000000000000_1_000;         // address 0:
-   wb_dat_i = 32'b100_000_1_00_0011_100_0000000000000000;      // read value from memory cell 0
+   wbs_adr_i = 32'b00_00000000000000000000000000_1_000;        // address 0:
+   wbs_dat_i = 32'b100_000_1_00_0011_100_0000000000000000;     // read value from memory cell 0
    #10
-   wb_adr_i = 32'b00_00000000000000000000000000_1_001;         // address 1:
-   wb_dat_i = 32'b011_000_1_11_0011_111_0000000011100010;      // write value to memory cell 14, spread 2 (joined output)
+   wbs_adr_i = 32'b00_00000000000000000000000000_1_001;        // address 1:
+   wbs_dat_i = 32'b011_000_1_11_0011_111_0000000011100010;     // write value to memory cell 14, spread 2 (joined output)
    #10
-   wb_adr_i = 32'b00_00000000000000000000000000_1_010;         // address 2:
-   wb_dat_i = 32'b100_000_1_00_0011_011_0000000000000000;      // jump to address 0
+   wbs_adr_i = 32'b00_00000000000000000000000000_1_010;        // address 2:
+   wbs_dat_i = 32'b100_000_1_00_0011_011_0000000000000000;     // jump to address 0
    #10
    // set pin directions
-   wb_adr_i = 32'b01_000000000000000000000000000001;           // set pin directions
-   wb_dat_i = 32'b00000000000000000000000011110000;            // first 4 pins are inputs, next 4 pins are outputs
+   wbs_adr_i = 32'b01_000000000000000000000000000001;          // set pin directions
+   wbs_dat_i = 32'b00000000000000000000000011110000;           // first 4 pins are inputs, next 4 pins are outputs
    #10
    // exit programming mode
-   wb_adr_i = 32'b01_000000000000000000000000000000;           // set programming mode
-   wb_dat_i = 32'b00000000000000000000000000000000;            // to 0
+   wbs_adr_i = 32'b01_000000000000000000000000000000;          // set programming mode
+   wbs_dat_i = 32'b00000000000000000000000000000000;           // to 0
    #10
    // stop wishbone communications
-   wb_we_i = 0;
-   wb_cyc_i = 0;
-   wb_stb_i = 0;
+   wbs_we_i = 0;
+   wbs_cyc_i = 0;
+   wbs_stb_i = 0;
    // set input pins
    pin_data_in = 4'b0011;
    // wait for data to appear on output pins

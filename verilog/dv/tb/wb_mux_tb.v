@@ -12,11 +12,11 @@ parameter DATA_WIDTH = 16;
 parameter IO_PINS = 16;
 parameter WB_WIDTH = 32;
 
-reg wb_stb_i;
-reg wb_cyc_i;
-reg wb_we_i;
-reg [WB_WIDTH-1:0] wb_adr_i;
-reg [WB_WIDTH-1:0] wb_dat_i;
+reg wbs_stb_i;
+reg wbs_cyc_i;
+reg wbs_we_i;
+reg [WB_WIDTH-1:0] wbs_adr_i;
+reg [WB_WIDTH-1:0] wbs_dat_i;
 wire wbs_ack_o;
 wire [WB_WIDTH-1:0] wbs_dat_o;
 wire prog_we;
@@ -41,11 +41,11 @@ wb_mux #(
    .IO_PINS(IO_PINS),
    .WB_WIDTH(WB_WIDTH)
 ) wb_mux_dut (
-   .wb_stb_i(wb_stb_i),
-   .wb_cyc_i(wb_cyc_i),
-   .wb_we_i(wb_we_i),
-   .wb_adr_i(wb_adr_i),
-   .wb_dat_i(wb_dat_i),
+   .wbs_stb_i(wbs_stb_i),
+   .wbs_cyc_i(wbs_cyc_i),
+   .wbs_we_i(wbs_we_i),
+   .wbs_adr_i(wbs_adr_i),
+   .wbs_dat_i(wbs_dat_i),
    .wbs_ack_o(wbs_ack_o),
    .wbs_dat_o(wbs_dat_o),
    .prog_we(prog_we),
@@ -68,45 +68,45 @@ initial begin
       $time, wbs_ack_o, wbs_dat_o, prog_we, prog_sel, prog_waddr, prog_wdata, pads_we, pads_waddr, pads_wdata,
       debug_sel, debug_addr, debug_we, debug_wdata, entropy_word);
    // before cycle
-   wb_stb_i = 0;
-   wb_cyc_i = 0;
-   wb_we_i = 0;
-   wb_adr_i = 0;
-   wb_dat_i = 32'b11111111111111111111111111111111;
+   wbs_stb_i = 0;
+   wbs_cyc_i = 0;
+   wbs_we_i = 0;
+   wbs_adr_i = 0;
+   wbs_dat_i = 32'b11111111111111111111111111111111;
    debug_rdata = 16'b1111000010101010;
    #10
    // prog read (no effect)
-   wb_stb_i = 1;
-   wb_cyc_i = 1;
-   wb_adr_i = 32'b00_0000000000000000000_101_11011011;
+   wbs_stb_i = 1;
+   wbs_cyc_i = 1;
+   wbs_adr_i = 32'b00_0000000000000000000_101_11011011;
    #10
    // prog write
-   wb_we_i = 1;
+   wbs_we_i = 1;
    #10
    // pads read (no effect)
-   wb_we_i = 0;
-   wb_adr_i = 32'b01_000000000000000000000000000001;
+   wbs_we_i = 0;
+   wbs_adr_i = 32'b01_000000000000000000000000000001;
    #10
    // pads write
-   wb_we_i = 1;
+   wbs_we_i = 1;
    #10
    // debug read
-   wb_we_i = 0;
-   wb_adr_i = 32'b10_0000000000000000000000_010_01010;
+   wbs_we_i = 0;
+   wbs_adr_i = 32'b10_0000000000000000000000_010_01010;
    #10
    // debug write
-   wb_we_i = 1;
+   wbs_we_i = 1;
    #10
    // entropy read (no effect)
-   wb_we_i = 0;
-   wb_adr_i = 32'b11_000000000000000000000000000000;
+   wbs_we_i = 0;
+   wbs_adr_i = 32'b11_000000000000000000000000000000;
    #10
    // entropy write
-   wb_we_i = 1;
+   wbs_we_i = 1;
    #10
    // after cycle
-   wb_stb_i = 0;
-   wb_cyc_i = 0;
+   wbs_stb_i = 0;
+   wbs_cyc_i = 0;
    #10
    $stop;
 end

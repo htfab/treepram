@@ -35,11 +35,11 @@ module wb_mux #(parameter
    // wishbone interface
    //input wb_clk_i,          // wb clock
    //input wb_rst_i,          // wb reset, active high
-   input wb_stb_i,            // wb strobe signal
-   input wb_cyc_i,            // wb cycle signal, sending on the bus requires wb_stb_i && wb_cyc_i
-   input wb_we_i,             // wb write enable signal, 0=input 1=output
-   input [WB_WIDTH-1:0] wb_adr_i,         // wb address
-   input [WB_WIDTH-1:0] wb_dat_i,         // wb input data
+   input wbs_stb_i,           // wb strobe signal
+   input wbs_cyc_i,           // wb cycle signal, sending on the bus requires wbs_stb_i && wbs_cyc_i
+   input wbs_we_i,            // wb write enable signal, 0=input 1=output
+   input [WB_WIDTH-1:0] wbs_adr_i,        // wb address
+   input [WB_WIDTH-1:0] wbs_dat_i,        // wb input data
    output wbs_ack_o,                      // wb acknowledge
    output [WB_WIDTH-1:0] wbs_dat_o,       // wb output data
    // programmer interface
@@ -62,36 +62,36 @@ module wb_mux #(parameter
 );
 
 // minimal wishbone logic
-wire valid = wb_stb_i && wb_cyc_i;
+wire valid = wbs_stb_i && wbs_cyc_i;
 assign wbs_ack_o = valid;
 
 // interface selection
-wire[1:0] interface = wb_adr_i[WB_WIDTH-2 +: 2];
+wire[1:0] interface = wbs_adr_i[WB_WIDTH-2 +: 2];
 wire if_prog = valid && interface == 2'b00;
 wire if_pads = valid && interface == 2'b01;
 wire if_debug = valid && interface == 2'b10;
 wire if_entropy = valid && interface == 2'b11;
 
 // programmer interface
-assign prog_we = if_prog && wb_we_i;
-assign {prog_sel, prog_waddr} = prog_we ? wb_adr_i[WB_WIDTH-3:0] : 0;
-assign prog_wdata = prog_we ? wb_dat_i : 0;
+assign prog_we = if_prog && wbs_we_i;
+assign {prog_sel, prog_waddr} = prog_we ? wbs_adr_i[WB_WIDTH-3:0] : 0;
+assign prog_wdata = prog_we ? wbs_dat_i : 0;
 
 // pads interface
-assign pads_we = if_pads && wb_we_i;
-assign pads_waddr = pads_we ? wb_adr_i[WB_WIDTH-3:0] : 0;
-assign pads_wdata = pads_we ? wb_dat_i : 0;
+assign pads_we = if_pads && wbs_we_i;
+assign pads_waddr = pads_we ? wbs_adr_i[WB_WIDTH-3:0] : 0;
+assign pads_wdata = pads_we ? wbs_dat_i : 0;
 
 // debugger interface, input
-assign {debug_sel, debug_addr} = if_debug ? wb_adr_i[WB_WIDTH-3:0] : 0;
-assign debug_we = if_debug && wb_we_i;
-assign debug_wdata = debug_we ? wb_dat_i : 0;
+assign {debug_sel, debug_addr} = if_debug ? wbs_adr_i[WB_WIDTH-3:0] : 0;
+assign debug_we = if_debug && wbs_we_i;
+assign debug_wdata = debug_we ? wbs_dat_i : 0;
 
 // debugger interface, output
-assign wbs_dat_o = (if_debug && !wb_we_i) ? debug_rdata : 0;
+assign wbs_dat_o = (if_debug && !wbs_we_i) ? debug_rdata : 0;
 
 // entropy pool interface
-assign entropy_word = (if_entropy && wb_we_i) ? wb_dat_i : 0;
+assign entropy_word = (if_entropy && wbs_we_i) ? wbs_dat_i : 0;
 
 endmodule
 

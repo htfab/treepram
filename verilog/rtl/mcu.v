@@ -49,11 +49,11 @@ module mcu #(parameter
 )(
    input wb_clk_i,                        // wishbone clock
    input wb_rst_i,                        // wb reset, active high
-   input wb_stb_i,                        // wb strobe
-   input wb_cyc_i,                        // wb cycle
-   input wb_we_i,                         // wb write enable
-   input [WB_WIDTH-1:0] wb_adr_i,         // wb address
-   input [WB_WIDTH-1:0] wb_dat_i,         // wb input data
+   input wbs_stb_i,                       // wb strobe
+   input wbs_cyc_i,                       // wb cycle
+   input wbs_we_i,                        // wb write enable
+   input [WB_WIDTH-1:0] wbs_adr_i,        // wb address
+   input [WB_WIDTH-1:0] wbs_dat_i,        // wb input data
    output wbs_ack_o,                      // wb acknowledge
    output [WB_WIDTH-1:0] wbs_dat_o,       // wb output data
    input [LOGIC_PROBES-1:0] la_data_in,   // logic analyzer probes input
@@ -346,11 +346,11 @@ wb_mux #(
    .IO_PINS(IO_PINS),
    .WB_WIDTH(WB_WIDTH)
 ) wb_mux_inst (
-   .wb_stb_i(wb_stb_i),
-   .wb_cyc_i(wb_cyc_i),
-   .wb_we_i(wb_we_i),
-   .wb_adr_i(wb_adr_i),
-   .wb_dat_i(wb_dat_i),
+   .wbs_stb_i(wbs_stb_i),
+   .wbs_cyc_i(wbs_cyc_i),
+   .wbs_we_i(wbs_we_i),
+   .wbs_adr_i(wbs_adr_i),
+   .wbs_dat_i(wbs_dat_i),
    .wbs_ack_o(wbs_ack_o),
    .wbs_dat_o(wbs_dat_o),
    .prog_we(prog_we),
