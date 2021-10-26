@@ -20,13 +20,13 @@ the memory mesh, io filter and programming multiplexer into a single package
     ||||                  ||| +----------+ +=| prng |=+       |||
   +------+  +-----------+ ||+=| cpu core |=+ +------+ |  +-----------+
   |      |==| instr mem |=====|   w/alu  |===============|           |
-  |      |  +-----------+ ||  +----------+   +------+ |  |           |
-  |      |                ||  +----------+ +=| prng |=+  |           |
-  | prog |  +-----------+ |+==| cpu core |=+ +------+ |  |           |
+  |      |  |           | ||  +----------+   +------+ |  |           |
+  |      |  | - - - - - | ||  +----------+ +=| prng |=+  |           |
+  | prog |  |           | |+==| cpu core |=+ +------+ |  |           |
   |  mux |==| instr mem |=====|   w/alu  |===============| mem mesh  |
-  |      |  +-----------+ |   +----------+   +------+ |  |           |
-  |      |                |   +----------+ +=| prng |=+  |           |
-  |      |  +-----------+ +===| cpu core |=+ +------+    |           |
+  |      |  |           | |   +----------+   +------+ |  |           |
+  |      |  | - - - - - | |   +----------+ +=| prng |=+  |           |
+  |      |  |           | +===| cpu core |=+ +------+    |           |
   |      |==| instr mem |=====|   w/alu  |===============|           |
   +------+  +-----------+     +----------+               +-----------+
 
@@ -66,81 +66,80 @@ wire [`IO_PINS-1:0] pin_dir;                           // pads > iof
 wire [`IO_PINS-1:0] pin_data_in;                       // pads > iof
 wire [`IO_PINS-1:0] pin_data_out;                      // pads < iof
 
-// between cpu core and corresponding instruction memory
-wire [`INSTR_WIDTH-1:0] opcode[`CORES-1:0];             // cpu < im
-wire [`PC_WIDTH-1:0] progctr[`CORES-1:0];               // cpu > im
+// between cpu core and instruction memory (unpacked version for cpu core)
+wire [`PC_WIDTH-1:0] im_raddr[`CORES-1:0];             // cpu > im
+wire [`INSTR_WIDTH-1:0] im_rdata[`CORES-1:0];          // cpu < im
+
+// between cpu core and instruction memory (packed version for instruction memory)
+wire [`CORES*`PC_WIDTH-1:0] im_raddr_raw;              // cpu > im
+wire [`CORES*`INSTR_WIDTH-1:0] im_rdata_raw;           // cpu < im
 
 // between cpu core and memory mesh (unpacked versions for cpu cores)
-wire [`DATA_WIDTH-1:0] mem_rdata[`CORES-1:0];           // cpu < mesh
+wire [`DATA_WIDTH-1:0] mem_rdata[`CORES-1:0];          // cpu < mesh
 wire mem_we[`CORES-1:0];                               // cpu > mesh
-wire [`ADDR_WIDTH-1:0] mem_waddr[`CORES-1:0];           // cpu > mesh
+wire [`ADDR_WIDTH-1:0] mem_waddr[`CORES-1:0];          // cpu > mesh
 wire [SPREAD_WIDTH-1:0] mem_wspread[`CORES-1:0];       // cpu > mesh
-wire [`DATA_WIDTH-1:0] mem_wdata[`CORES-1:0];           // cpu > mesh
-wire [`ADDR_WIDTH-1:0] mem_raddr[`CORES-1:0];           // cpu > mesh
+wire [`DATA_WIDTH-1:0] mem_wdata[`CORES-1:0];          // cpu > mesh
+wire [`ADDR_WIDTH-1:0] mem_raddr[`CORES-1:0];          // cpu > mesh
 
 // between cpu core and memory mesh (packed versions for memory mesh)
-wire [`CORES*`DATA_WIDTH-1:0] mem_rdata_raw;            // cpu < mesh
+wire [`CORES*`DATA_WIDTH-1:0] mem_rdata_raw;           // cpu < mesh
 wire [`CORES-1:0] mem_we_raw;                          // cpu > mesh
-wire [`CORES*`ADDR_WIDTH-1:0] mem_waddr_raw;            // cpu > mesh
+wire [`CORES*`ADDR_WIDTH-1:0] mem_waddr_raw;           // cpu > mesh
 wire [`CORES*SPREAD_WIDTH-1:0] mem_wspread_raw;        // cpu > mesh
-wire [`CORES*`DATA_WIDTH-1:0] mem_wdata_raw;            // cpu > mesh
-wire [`CORES*`ADDR_WIDTH-1:0] mem_raddr_raw;            // cpu > mesh
+wire [`CORES*`DATA_WIDTH-1:0] mem_wdata_raw;           // cpu > mesh
+wire [`CORES*`ADDR_WIDTH-1:0] mem_raddr_raw;           // cpu > mesh
 
 // between cpu core and corresponding prng
-wire [`DATA_WIDTH-1:0] prng_random[`CORES-1:0];         // cpu < prng
+wire [`DATA_WIDTH-1:0] prng_random[`CORES-1:0];        // cpu < prng
 
-// between instruction memory and programming multiplexer (unpacked versions for instruction memory)
-wire im_we[`CORES-1:0];                                // im < pmux
-wire [`PC_WIDTH-1:0] im_waddr[`CORES-1:0];              // im < pmux
-wire [`INSTR_WIDTH-1:0] im_wdata[`CORES-1:0];           // im < pmux
-
-// between instruction memory and programming multiplexer (packed versions for programming multiplexer)
+// between instruction memory and programming multiplexer
 wire [`CORES-1:0] im_we_raw;                           // im < pmux
-wire [`CORES*`PC_WIDTH-1:0] im_waddr_raw;               // im < pmux
-wire [`CORES*`INSTR_WIDTH-1:0] im_wdata_raw;            // im < pmux
+wire [`CORES*`PC_WIDTH-1:0] im_waddr_raw;              // im < pmux
+wire [`CORES*`INSTR_WIDTH-1:0] im_wdata_raw;           // im < pmux
 
 // between memory mesh and io filter
 wire [MEM_IO_PORTS-1:0] mem_io_active_in;             // mesh < iof
 wire [MEM_IO_PORTS-1:0] mem_io_active_out;            // mesh > iof
-wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_in;    // mesh < iof
-wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_out;   // mesh > iof
+wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_in;   // mesh < iof
+wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_out;  // mesh > iof
 
 // between debugging multiplexer and cpu core (unpacked versions for cpu core)
 wire [1:0] debug_cpu_mode[`CORES-1:0];                 // dmux > cpu
 wire [3:0] debug_reg_sel[`CORES-1:0];                  // dmux > cpu
 wire debug_reg_we[`CORES-1:0];                         // dmux > cpu
-wire [`DATA_WIDTH-1:0] debug_reg_wdata[`CORES-1:0];     // dmux > cpu
+wire [`DATA_WIDTH-1:0] debug_reg_wdata[`CORES-1:0];    // dmux > cpu
 wire debug_reg_stopped[`CORES-1:0];                    // dmux < cpu
-wire [`DATA_WIDTH-1:0] debug_reg_rdata[`CORES-1:0];     // dmux < cpu
+wire [`DATA_WIDTH-1:0] debug_reg_rdata[`CORES-1:0];    // dmux < cpu
 
 // between debugging multiplexer and cpu core (packed versions for debugging multiplexer)
 wire [`CORES*2-1:0] debug_cpu_mode_raw;                // dmux > cpu
 wire [`CORES*4-1:0] debug_reg_sel_raw;                 // dmux > cpu
 wire [`CORES-1:0] debug_reg_we_raw;                    // dmux > cpu
-wire [`CORES*`DATA_WIDTH-1:0] debug_reg_wdata_raw;      // dmux > cpu
+wire [`CORES*`DATA_WIDTH-1:0] debug_reg_wdata_raw;     // dmux > cpu
 wire [`CORES-1:0] debug_reg_stopped_raw;               // dmux < cpu
-wire [`CORES*`DATA_WIDTH-1:0] debug_reg_rdata_raw;      // dmux < cpu
+wire [`CORES*`DATA_WIDTH-1:0] debug_reg_rdata_raw;     // dmux < cpu
 
 // between wishbone multiplexer and programming multiplexer
 wire prog_we;                                         // wbmux > pmux
-wire [`LOG_CORES-1:0] prog_sel;                        // wbmux > pmux
-wire [`PC_WIDTH-1:0] prog_waddr;                       // wbmux > pmux
-wire [`INSTR_WIDTH-1:0] prog_wdata;                    // wbmux > pmux
+wire [`LOG_CORES-1:0] prog_sel;                       // wbmux > pmux
+wire [`PC_WIDTH-1:0] prog_waddr;                      // wbmux > pmux
+wire [`INSTR_WIDTH-1:0] prog_wdata;                   // wbmux > pmux
 
 // between wishbone multiplexer and io pads
 wire pads_we;                                         // wbmux > pads
 wire pads_waddr;                                      // wbmux > pads
-wire [`IO_PINS-1:0] pads_wdata;                        // wbmux > pads
+wire [`IO_PINS-1:0] pads_wdata;                       // wbmux > pads
 
 // between wishbone multiplexer and debugging multiplexer
-wire [`LOG_CORES-1:0] debug_sel;                       // wbmux > dmux
+wire [`LOG_CORES-1:0] debug_sel;                      // wbmux > dmux
 wire [4:0] debug_addr;                                // wbmux > dmux
 wire debug_we;                                        // wbmux > dmux
-wire [`DATA_WIDTH-1:0] debug_wdata;                    // wbmux > dmux
-wire [`DATA_WIDTH-1:0] debug_rdata;                    // wbmux < dmux
+wire [`DATA_WIDTH-1:0] debug_wdata;                   // wbmux > dmux
+wire [`DATA_WIDTH-1:0] debug_rdata;                   // wbmux < dmux
 
 // between wishbone multiplexer and entropy pool
-wire [`WB_WIDTH-1:0] entropy_word;                     // wbmux > ep
+wire [`WB_WIDTH-1:0] entropy_word;                    // wbmux > ep
 
 // between entropy pool and prng's
 wire entropy_bit;                                     // ep > prng
@@ -154,7 +153,7 @@ for(core=0; core<`CORES; core=core+1) begin:g_core
    cpu_core cpu_core_inst (
       .clk(clk),
       .rst_n(rst_soft_n),
-      .opcode(opcode[core]),
+      .opcode(im_rdata[core]),
       .mem_rdata(mem_rdata[core]),
       .cpu_num(cpu_num),
       .prng_in(prng_random[core]),
@@ -162,7 +161,7 @@ for(core=0; core<`CORES; core=core+1) begin:g_core
       .debug_sel(debug_reg_sel[core]),
       .debug_we(debug_reg_we[core]),
       .debug_wdata(debug_reg_wdata[core]),
-      .progctr(progctr[core]),
+      .progctr(im_raddr[core]),
       .mem_we(mem_we[core]),
       .mem_waddr(mem_waddr[core]),
       .mem_wspread(mem_wspread[core]),
@@ -170,24 +169,6 @@ for(core=0; core<`CORES; core=core+1) begin:g_core
       .mem_raddr(mem_raddr[core]),
       .debug_stopped(debug_reg_stopped[core]),
       .debug_rdata(debug_reg_rdata[core])
-   );
-
-   // add corresponding instruction memory
-   localparam CORES_RNDUP = 1 << `LOG_CORES;
-   localparam DEPTH_MULT = (core + CORES_RNDUP) & ~(core + CORES_RNDUP-1);
-   // e.g. for 8 cores, depths are multiplied by 8, 1, 2, 1, 4, 1, 2, 1
-   // so that we have a few cores that accept longer programs but the total
-   // memory required is still kept reasonably low
-   instr_mem #(
-      .DEPTH(`INSTR_DEPTH * DEPTH_MULT)
-   ) instr_mem_inst (
-      .clk(clk),
-      .rst_n(rst_hard_n),
-      .raddr(progctr[core]),
-      .rdata(opcode[core]),
-      .we(im_we[core]),
-      .waddr(im_waddr[core]),
-      .wdata(im_wdata[core])
    );
 
    // add its own pseudorandom number generator
@@ -210,10 +191,11 @@ for(core=0; core<`CORES; core=core+1) begin:g_core
    // convert memory mesh outputs: packed to unpacked
    assign mem_rdata[core] = mem_rdata_raw[core*`DATA_WIDTH +: `DATA_WIDTH];
 
-   // convert programming multiplexer outputs: packed to unpacked
-   assign im_we[core] = im_we_raw[core];
-   assign im_waddr[core] = im_waddr_raw[core*`PC_WIDTH +: `PC_WIDTH];
-   assign im_wdata[core] = im_wdata_raw[core*`INSTR_WIDTH +: `INSTR_WIDTH];
+   // convert instruction memory inputs: unpacked to packed
+   assign im_raddr_raw[core*`PC_WIDTH +: `PC_WIDTH] = im_raddr[core];
+
+   // convert instruction memory outputs: packed to unpacked
+   assign im_rdata[core] = im_rdata_raw[core*`INSTR_WIDTH +: `INSTR_WIDTH];
 
    // convert debugging multiplexer inputs: unpacked to packed
    assign debug_reg_stopped_raw[core] = debug_reg_stopped[core];
@@ -257,7 +239,18 @@ io_filter_rev io_filter_inst (
    .port_data_out(mem_io_data_out)
 );
 
-// add the programming multiplexer, with a packed bus towards instruction memories
+// add instruction memory blocks
+instr_mem instr_mem_inst (
+  .clk(clk),
+  .rst_n(rst_hard_n),
+  .raddr(im_raddr_raw),
+  .rdata(im_rdata_raw),
+  .we(im_we_raw),
+  .waddr(im_waddr_raw),
+  .wdata(im_wdata_raw)
+);
+
+// add the programming multiplexer
 prog_mux prog_mux_inst (
    .we(prog_we),
    .sel(prog_sel),
