@@ -133,7 +133,7 @@ module alu (
          assign subseq = in1d;
       end else begin:i_nfirst
          wire [i+1:0] index = {log_bits[i+1], {(i+1){1'b0}}};
-         assign subseq = g_bit[i+1].subseq[index +: 1<<(i+1)];
+         assign subseq = g_bit[i+1].subseq >> index;
       end
       assign log_bits[i] = |subseq[1<<i +: 1<<i];
    end
