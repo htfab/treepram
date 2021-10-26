@@ -105,26 +105,26 @@ PC_WIDTH = size of program counter, should be <= `DATA_WIDTH
 ADDR_WIDTH = size of mem_mesh addresses, should be <= `DATA_WIDTH
 SPREAD_WIDTH = size of mem_mesh spread value
 INSTR_WIDTH = combined size of opcode & immediate, should be kept at 32
-CPU_NUM = id number to differentiate cpu cores, can be queried by code running on the processor
 */
 
-module cpu_core #(parameter CPU_NUM=0) (
-   input clk,                             // clock signal
-   input rst_n,                           // reset, active low
+module cpu_core (
+   input clk,                              // clock signal
+   input rst_n,                            // reset, active low
    input [`INSTR_WIDTH-1:0] opcode,        // opcode to be executed & immediate args
    input [`DATA_WIDTH-1:0] mem_rdata,      // connected to 'rdata' of memory module
+   input [`DATA_WIDTH-1:0] cpu_num,        // id to differentiate cpu cores
    input [`DATA_WIDTH-1:0] prng_in,        // random number from prng
-   input [1:0] debug_mode,                // debug: 00 = no change, 01 = single step, 10 = run, 11 = stop
-   input [3:0] debug_sel,                 // debug: cpu status register to query or modify
-   input debug_we,                        // debug: modify selected status register
+   input [1:0] debug_mode,                 // debug: 00 = no change, 01 = single step, 10 = run, 11 = stop
+   input [3:0] debug_sel,                  // debug: cpu status register to query or modify
+   input debug_we,                         // debug: modify selected status register
    input [`DATA_WIDTH-1:0] debug_wdata,    // debug: new value of selected status register
    output [`PC_WIDTH-1:0] progctr,         // program counter
-   output mem_we,                         // +-
+   output mem_we,                          // +-
    output [`ADDR_WIDTH-1:0] mem_waddr,     // | connected to
    output [`SPREAD_WIDTH-1:0] mem_wspread, // | corresponding ports
    output [`DATA_WIDTH-1:0] mem_wdata,     // | of memory module
    output [`ADDR_WIDTH-1:0] mem_raddr,     // +-
-   output debug_stopped,                  // debug: read back whether core is stopped
+   output debug_stopped,                   // debug: read back whether core is stopped
    output [`DATA_WIDTH-1:0] debug_rdata    // debug: current value of selected status register
 );
 
@@ -171,7 +171,7 @@ assign sources1[3] = mem_rdata;
 assign sources1[4] = op_immed;
 assign sources1[5] = op_immed[15:8];
 assign sources1[6] = timer;
-assign sources1[7] = CPU_NUM;
+assign sources1[7] = cpu_num;
 
 wire [`DATA_WIDTH-1:0] sources2[7:0];
 assign sources2[0] = reg1;

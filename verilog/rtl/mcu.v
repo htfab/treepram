@@ -150,13 +150,13 @@ generate genvar core;
 for(core=0; core<`CORES; core=core+1) begin:g_core
 
    // add the cpu core itself
-   cpu_core #(
-      .CPU_NUM(core)
-   ) cpu_core_inst (
+   wire [`DATA_WIDTH-1:0] cpu_num = core;
+   cpu_core cpu_core_inst (
       .clk(clk),
       .rst_n(rst_soft_n),
       .opcode(opcode[core]),
       .mem_rdata(mem_rdata[core]),
+      .cpu_num(cpu_num),
       .prng_in(prng_random[core]),
       .debug_mode(debug_cpu_mode[core]),
       .debug_sel(debug_reg_sel[core]),
@@ -191,11 +191,11 @@ for(core=0; core<`CORES; core=core+1) begin:g_core
    );
 
    // add its own pseudorandom number generator
-   prng_wrap #(
-      .INDEX(core)
-   ) prng_inst (
+   wire [`PRNG_STATE_BITS-1:0] index = core;
+   prng_wrap prng_inst (
       .clk(clk),
       .rst_n(rst_prng_n),
+      .index(index),
       .entropy(entropy_bit),
       .random(prng_random[core])
    );
