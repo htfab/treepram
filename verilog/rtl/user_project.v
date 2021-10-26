@@ -35,21 +35,7 @@ module user_project (
     output [2:0] irq
 );
     
-mcu #(
-    .CORES(4),
-    .LOG_CORES(2),
-    .MEM_DEPTH(32),
-    .DATA_WIDTH(16),
-    .PC_WIDTH(6),
-    .ADDR_WIDTH(5),
-    .INSTR_WIDTH(32),
-    .INSTR_DEPTH(16),
-    .IO_PINS(16),
-    .IO_PADS(`MPRJ_IO_PADS),
-    .FIRST_PAD(12),
-    .LOGIC_PROBES(128),
-    .WB_WIDTH(32)
-) mcu_inst (
+mcu mcu_inst (
     .wb_clk_i(wb_clk_i),
     .wb_rst_i(wb_rst_i),
     .wbs_stb_i(wbs_stb_i),

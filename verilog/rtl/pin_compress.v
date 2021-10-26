@@ -13,23 +13,23 @@ mask   = 0100100101000101
 result = 0000000000011011
 */
 
-module pin_compress #(parameter WIDTH=16) (
-   input [WIDTH-1:0] data,
-   input [WIDTH-1:0] mask,
-   output [WIDTH-1:0] result
+module pin_compress (
+   input [`IO_PINS-1:0] data,
+   input [`IO_PINS-1:0] mask,
+   output [`IO_PINS-1:0] result
 );
 
 generate genvar layer;
-   for (layer=0; layer<WIDTH; layer=layer+1) begin:comp
-      wire [WIDTH-1:0] sd;
+   for (layer=0; layer<`IO_PINS; layer=layer+1) begin:comp
+      wire [`IO_PINS-1:0] sd;
       if (layer == 0) begin:i_first
-         assign sd = {{(WIDTH-1){1'b0}}, data[WIDTH-1] & mask[WIDTH-1]};
+         assign sd = {{(`IO_PINS-1){1'b0}}, data[`IO_PINS-1] & mask[`IO_PINS-1]};
       end else begin:i_nfirst
-         wire [WIDTH-1:0] sdp = comp[layer-1].sd;
-         assign sd = mask[WIDTH-1-layer] ? {sdp[WIDTH-2:0], data[WIDTH-1-layer]} : sdp;
+         wire [`IO_PINS-1:0] sdp = comp[layer-1].sd;
+         assign sd = mask[`IO_PINS-1-layer] ? {sdp[`IO_PINS-2:0], data[`IO_PINS-1-layer]} : sdp;
       end
    end
-   assign result = comp[WIDTH-1].sd;
+   assign result = comp[`IO_PINS-1].sd;
 endgenerate
 
 endmodule

@@ -9,14 +9,13 @@ Wrapper for prng with known good polynomials (having a cycle length of 2^32-1 an
 Different choices of 0 <= INDEX < 256 generate independent prng's. For even more, the table below should be extended.
 */
 
-module prng_wrap #(parameter INDEX = 0, OUTPUT_BITS = 16) (
+module prng_wrap #(parameter INDEX = 0) (
    input clk,
    input rst_n,
    input entropy,
-   output [OUTPUT_BITS-1:0] random
+   output [`DATA_WIDTH-1:0] random
 );
 
-localparam STATE_BITS = 32;
 localparam POLY_ARRAY_LEN = 256;
 localparam POLY_ARRAY = {
    32'h80000062, 32'h80000092, 32'h80000106, 32'h80000114, 32'h80000412, 32'h80000414, 32'h80000806, 32'h80000850,
@@ -54,10 +53,8 @@ localparam POLY_ARRAY = {
 };
 
 prng #(
-   .STATE_BITS(STATE_BITS),
-   .POLYNOMIAL(POLY_ARRAY[(POLY_ARRAY_LEN-1-(INDEX % POLY_ARRAY_LEN))*STATE_BITS +: STATE_BITS]),
-   .STATE_INIT(INDEX),
-   .OUTPUT_BITS(OUTPUT_BITS)
+   .POLYNOMIAL(POLY_ARRAY[(POLY_ARRAY_LEN-1-(INDEX % POLY_ARRAY_LEN))*`PRNG_STATE_BITS +: `PRNG_STATE_BITS]),
+   .STATE_INIT(INDEX)
 ) prng_inst (
    .clk(clk),
    .rst_n(rst_n),

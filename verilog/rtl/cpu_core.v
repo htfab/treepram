@@ -11,7 +11,7 @@ Fetches instructions via the progctr (out) and opcode (in) ports. Each opcode in
 take two values from registers, memory or other sources, feed them through the ALU and put the
 results in a register or memory cell or use it as a jump target.
 
-Opcode structure assumes INSTR_WIDTH=32. Changing it requires substantial edits to the code below.
+Opcode structure assumes `INSTR_WIDTH=32. Changing it requires substantial edits to the code below.
 
 Opcodes have 32 bits and use the following format:
 AAA BBB C DD EEEE FFF GGGGGGGGGGGGGGGG
@@ -101,43 +101,43 @@ Example opcodes to implement Random Access Machine instructions:
 
 Parameters:
 DATA_WIDTH = processor word size
-PC_WIDTH = size of program counter, should be <= DATA_WIDTH
-ADDR_WIDTH = size of mem_mesh addresses, should be <= DATA_WIDTH
+PC_WIDTH = size of program counter, should be <= `DATA_WIDTH
+ADDR_WIDTH = size of mem_mesh addresses, should be <= `DATA_WIDTH
 SPREAD_WIDTH = size of mem_mesh spread value
 INSTR_WIDTH = combined size of opcode & immediate, should be kept at 32
 CPU_NUM = id number to differentiate cpu cores, can be queried by code running on the processor
 */
 
-module cpu_core #(parameter DATA_WIDTH=16, PC_WIDTH=8, ADDR_WIDTH=8, SPREAD_WIDTH=3, INSTR_WIDTH=32, CPU_NUM=0) (
+module cpu_core #(parameter CPU_NUM=0) (
    input clk,                             // clock signal
    input rst_n,                           // reset, active low
-   input [INSTR_WIDTH-1:0] opcode,        // opcode to be executed & immediate args
-   input [DATA_WIDTH-1:0] mem_rdata,      // connected to 'rdata' of memory module
-   input [DATA_WIDTH-1:0] prng_in,        // random number from prng
+   input [`INSTR_WIDTH-1:0] opcode,        // opcode to be executed & immediate args
+   input [`DATA_WIDTH-1:0] mem_rdata,      // connected to 'rdata' of memory module
+   input [`DATA_WIDTH-1:0] prng_in,        // random number from prng
    input [1:0] debug_mode,                // debug: 00 = no change, 01 = single step, 10 = run, 11 = stop
    input [3:0] debug_sel,                 // debug: cpu status register to query or modify
    input debug_we,                        // debug: modify selected status register
-   input [DATA_WIDTH-1:0] debug_wdata,    // debug: new value of selected status register
-   output [PC_WIDTH-1:0] progctr,         // program counter
+   input [`DATA_WIDTH-1:0] debug_wdata,    // debug: new value of selected status register
+   output [`PC_WIDTH-1:0] progctr,         // program counter
    output mem_we,                         // +-
-   output [ADDR_WIDTH-1:0] mem_waddr,     // | connected to
-   output [SPREAD_WIDTH-1:0] mem_wspread, // | corresponding ports
-   output [DATA_WIDTH-1:0] mem_wdata,     // | of memory module
-   output [ADDR_WIDTH-1:0] mem_raddr,     // +-
+   output [`ADDR_WIDTH-1:0] mem_waddr,     // | connected to
+   output [`SPREAD_WIDTH-1:0] mem_wspread, // | corresponding ports
+   output [`DATA_WIDTH-1:0] mem_wdata,     // | of memory module
+   output [`ADDR_WIDTH-1:0] mem_raddr,     // +-
    output debug_stopped,                  // debug: read back whether core is stopped
-   output [DATA_WIDTH-1:0] debug_rdata    // debug: current value of selected status register
+   output [`DATA_WIDTH-1:0] debug_rdata    // debug: current value of selected status register
 );
 
-reg [DATA_WIDTH-1:0] reg1;      // general-purpose registers
-reg [DATA_WIDTH-1:0] reg2;
+reg [`DATA_WIDTH-1:0] reg1;      // general-purpose registers
+reg [`DATA_WIDTH-1:0] reg2;
 reg carry;                      // carry flag
-reg [DATA_WIDTH-1:0] pc;        // register for program counter
-reg [DATA_WIDTH-1:0] timer;     // clock ticks since last reset
-reg [ADDR_WIDTH-1:0] raddr;     // next read address
+reg [`DATA_WIDTH-1:0] pc;        // register for program counter
+reg [`DATA_WIDTH-1:0] timer;     // clock ticks since last reset
+reg [`ADDR_WIDTH-1:0] raddr;     // next read address
 reg we;                         // write to memory on next cycle
-reg [ADDR_WIDTH-1:0] waddr;     // next write address
-reg [SPREAD_WIDTH-1:0] wspread; // next write spread
-reg [DATA_WIDTH-1:0] wdata;     // next write data
+reg [`ADDR_WIDTH-1:0] waddr;     // next write address
+reg [`SPREAD_WIDTH-1:0] wspread; // next write spread
+reg [`DATA_WIDTH-1:0] wdata;     // next write data
 reg stopped;                    // cpu core is stopped
 
 assign progctr = pc;
@@ -161,9 +161,9 @@ wire op_extra_carry = op_extra == 1;   // set carry based on in1, replace in1 wi
 wire op_extra_rdata = op_extra == 2;   // copy rdata to reg1 (or reg2 if reg1 is the target)
 wire op_extra_waddr = op_extra == 3;   // fill waddr & wspread from immediate
 
-wire [DATA_WIDTH-1:0] next_pc = pc + 1;
+wire [`DATA_WIDTH-1:0] next_pc = pc + 1;
 
-wire [DATA_WIDTH-1:0] sources1[7:0];
+wire [`DATA_WIDTH-1:0] sources1[7:0];
 assign sources1[0] = reg1;
 assign sources1[1] = reg2;
 assign sources1[2] = next_pc;
@@ -173,7 +173,7 @@ assign sources1[5] = op_immed[15:8];
 assign sources1[6] = timer;
 assign sources1[7] = CPU_NUM;
 
-wire [DATA_WIDTH-1:0] sources2[7:0];
+wire [`DATA_WIDTH-1:0] sources2[7:0];
 assign sources2[0] = reg1;
 assign sources2[1] = reg2;
 assign sources2[2] = next_pc;
@@ -183,20 +183,18 @@ assign sources2[5] = op_immed[7:0];
 assign sources2[6] = prng_in;
 assign sources2[7] = 1;
 
-wire [DATA_WIDTH-1:0] in1_orig = sources1[op_in1];                   // data to use as alu input 1, unless overridden by op_extra_carry
-wire in1_oh = in1_orig[DATA_WIDTH-1];                                // highest bit of in1_orig
-wire [DATA_WIDTH-1:0] in1 = op_extra_carry ? op_immed : in1_orig;    // data to use as alu input 1
-wire [DATA_WIDTH-1:0] in2 = sources2[op_in2];                        // data to use as alu input 2
+wire [`DATA_WIDTH-1:0] in1_orig = sources1[op_in1];                   // data to use as alu input 1, unless overridden by op_extra_carry
+wire in1_oh = in1_orig[`DATA_WIDTH-1];                                // highest bit of in1_orig
+wire [`DATA_WIDTH-1:0] in1 = op_extra_carry ? op_immed : in1_orig;    // data to use as alu input 1
+wire [`DATA_WIDTH-1:0] in2 = sources2[op_in2];                        // data to use as alu input 2
 wire carry_def = op_rst_carry ? 0 : carry;                           // carry to use as alu input, unless overridden by op_extra_carry
 wire carry_ovr = op_rst_carry ? ~in1_oh : in1_oh;                    // override value if op_extra_carry is set
 wire alu_cin = op_extra_carry ? carry_ovr : carry_def;               // consolidated carry input for alu
 
-wire [DATA_WIDTH-1:0] alu_out;                                       // data output from alu
+wire [`DATA_WIDTH-1:0] alu_out;                                       // data output from alu
 wire alu_cout;                                                       // carry output from alu
 
-alu #(
-   .DATA_WIDTH(DATA_WIDTH)
-) alu_inst (
+alu alu_inst (
    .opcode(op_alu),
    .in1(in1),
    .in2(in2),
@@ -215,30 +213,30 @@ wire op_target_wdata   = op_target == 7;
 
 // extract values from immediate to prepare for op_extra_waddr case
 wire immed_ovr = op_immed[15];
-wire [DATA_WIDTH-1:0] s_hi4  = immed_ovr ? op_immed[14:0] : op_immed[14:11];
-wire [DATA_WIDTH-1:0] d_lo11 = immed_ovr ? reg1 : op_immed[10:0];
-wire [DATA_WIDTH-1:0] a_hi8  = immed_ovr ? op_immed[14:0] : op_immed[14:7];
-wire [DATA_WIDTH-1:0] d_lo7  = immed_ovr ? reg1 : op_immed[6:0];
-wire [DATA_WIDTH-1:0] a_hi11 = immed_ovr ? reg1 : op_immed[14:4];
-wire [DATA_WIDTH-1:0] s_lo4  = immed_ovr ? op_immed[14:0] : op_immed[3:0];
+wire [`DATA_WIDTH-1:0] s_hi4  = immed_ovr ? op_immed[14:0] : op_immed[14:11];
+wire [`DATA_WIDTH-1:0] d_lo11 = immed_ovr ? reg1 : op_immed[10:0];
+wire [`DATA_WIDTH-1:0] a_hi8  = immed_ovr ? op_immed[14:0] : op_immed[14:7];
+wire [`DATA_WIDTH-1:0] d_lo7  = immed_ovr ? reg1 : op_immed[6:0];
+wire [`DATA_WIDTH-1:0] a_hi11 = immed_ovr ? reg1 : op_immed[14:4];
+wire [`DATA_WIDTH-1:0] s_lo4  = immed_ovr ? op_immed[14:0] : op_immed[3:0];
 
 // update target with alu output
 // if op_extra_rdata is set, also write mem_rdata to reg1 (if target is reg1, use reg2 instead)
 // if op_extra_waddr is set, also fill waddr & wspread with immediate (if target is waddr/wspread, replace with wdata)
-wire [DATA_WIDTH-1:0] reg1_mod = op_target_reg1 ? alu_out : (op_extra_rdata ? mem_rdata : reg1);
-wire [DATA_WIDTH-1:0] reg2_mod = op_target_reg2 ? alu_out : ((op_extra_rdata && op_target_reg1) ? mem_rdata : reg2);
-wire [DATA_WIDTH-1:0] pc_mod = op_target_pc ? alu_out : next_pc;
-wire [DATA_WIDTH-1:0] raddr_mod = op_target_raddr ? alu_out : raddr;
-wire [DATA_WIDTH-1:0] waddr_mod = op_target_waddr ? alu_out :
+wire [`DATA_WIDTH-1:0] reg1_mod = op_target_reg1 ? alu_out : (op_extra_rdata ? mem_rdata : reg1);
+wire [`DATA_WIDTH-1:0] reg2_mod = op_target_reg2 ? alu_out : ((op_extra_rdata && op_target_reg1) ? mem_rdata : reg2);
+wire [`DATA_WIDTH-1:0] pc_mod = op_target_pc ? alu_out : next_pc;
+wire [`DATA_WIDTH-1:0] raddr_mod = op_target_raddr ? alu_out : raddr;
+wire [`DATA_WIDTH-1:0] waddr_mod = op_target_waddr ? alu_out :
                           (op_extra_waddr ? (op_target_wspread ? a_hi8 : a_hi11) : waddr);
-wire [DATA_WIDTH-1:0] wspread_mod = op_target_wspread ? alu_out :
+wire [`DATA_WIDTH-1:0] wspread_mod = op_target_wspread ? alu_out :
                           (op_extra_waddr ? (op_target_waddr ? s_hi4 : s_lo4) : wspread);
-wire [DATA_WIDTH-1:0] wdata_mod = op_target_wdata ? alu_out :
+wire [`DATA_WIDTH-1:0] wdata_mod = op_target_wdata ? alu_out :
                           (op_extra_waddr ? (op_target_wspread ? d_lo7 : (op_target_waddr ? d_lo11 : wdata)) : wdata);
 wire we_mod = op_target_wdata || (op_extra_waddr && (op_target_waddr || op_target_wspread));
 
 // debug interface
-wire [DATA_WIDTH-1:0] debug_reg[15:0];
+wire [`DATA_WIDTH-1:0] debug_reg[15:0];
 assign debug_reg[0] = pc;
 assign debug_reg[1] = opcode[31:16];
 assign debug_reg[2] = opcode[15:0];

@@ -19,6 +19,7 @@ set ::env(DESIGN_NAME) user_project
 
 set ::env(VERILOG_FILES) "\
 	$::env(CARAVEL_ROOT)/verilog/rtl/defines.v \
+	$script_dir/../../verilog/rtl/defines.v \
 	$script_dir/../../verilog/rtl/user_project.v \
 	$script_dir/../../verilog/rtl/mcu.v \
 	$script_dir/../../verilog/rtl/cpu_core.v \
