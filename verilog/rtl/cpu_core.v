@@ -257,7 +257,7 @@ assign debug_reg[14] = wspread;
 assign debug_reg[15] = wdata;
 assign debug_rdata = debug_reg[debug_sel];
 assign debug_stopped = stopped;
-assign stopped_mod = debug_mode[1] ? debug_mode[0] : stopped;
+wire stopped_mod = debug_mode[1] ? debug_mode[0] : stopped;
 
 // sequential logic
 always @ (posedge clk) begin
