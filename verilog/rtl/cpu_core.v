@@ -196,7 +196,7 @@ wire alu_cout;                                                       // carry ou
 
 alu #(
    .DATA_WIDTH(DATA_WIDTH)
-) alu_dut (
+) alu_inst (
    .opcode(op_alu),
    .in1(in1),
    .in2(in2),
