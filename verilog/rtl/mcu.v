@@ -33,14 +33,14 @@ the memory mesh, io filter and programming multiplexer into a single package
 */
 
 module mcu (
-   input wb_clk_i,                        // wishbone clock
-   input wb_rst_i,                        // wb reset, active high
-   input wbs_stb_i,                       // wb strobe
-   input wbs_cyc_i,                       // wb cycle
-   input wbs_we_i,                        // wb write enable
+   input wb_clk_i,                         // wishbone clock
+   input wb_rst_i,                         // wb reset, active high
+   input wbs_stb_i,                        // wb strobe
+   input wbs_cyc_i,                        // wb cycle
+   input wbs_we_i,                         // wb write enable
    input [`WB_WIDTH-1:0] wbs_adr_i,        // wb address
    input [`WB_WIDTH-1:0] wbs_dat_i,        // wb input data
-   output wbs_ack_o,                      // wb acknowledge
+   output wbs_ack_o,                       // wb acknowledge
    output [`WB_WIDTH-1:0] wbs_dat_o,       // wb output data
    input [`LOGIC_PROBES-1:0] la_data_in,   // logic analyzer probes input
    output [`LOGIC_PROBES-1:0] la_data_out, // la probes output
@@ -99,10 +99,10 @@ wire [`CORES*`PC_WIDTH-1:0] im_waddr_raw;              // im < pmux
 wire [`CORES*`INSTR_WIDTH-1:0] im_wdata_raw;           // im < pmux
 
 // between memory mesh and io filter
-wire [MEM_IO_PORTS-1:0] mem_io_active_in;             // mesh < iof
-wire [MEM_IO_PORTS-1:0] mem_io_active_out;            // mesh > iof
-wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_in;   // mesh < iof
-wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_out;  // mesh > iof
+wire [MEM_IO_PORTS-1:0] mem_io_active_in;              // mesh < iof
+wire [MEM_IO_PORTS-1:0] mem_io_active_out;             // mesh > iof
+wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_in;    // mesh < iof
+wire [MEM_IO_PORTS*`DATA_WIDTH-1:0] mem_io_data_out;   // mesh > iof
 
 // between debugging multiplexer and cpu core (unpacked versions for cpu core)
 wire [1:0] debug_cpu_mode[`CORES-1:0];                 // dmux > cpu
@@ -121,28 +121,28 @@ wire [`CORES-1:0] debug_reg_stopped_raw;               // dmux < cpu
 wire [`CORES*`DATA_WIDTH-1:0] debug_reg_rdata_raw;     // dmux < cpu
 
 // between wishbone multiplexer and programming multiplexer
-wire prog_we;                                         // wbmux > pmux
-wire [`LOG_CORES-1:0] prog_sel;                       // wbmux > pmux
-wire [`PC_WIDTH-1:0] prog_waddr;                      // wbmux > pmux
-wire [`INSTR_WIDTH-1:0] prog_wdata;                   // wbmux > pmux
+wire prog_we;                                          // wbmux > pmux
+wire [`LOG_CORES-1:0] prog_sel;                        // wbmux > pmux
+wire [`PC_WIDTH-1:0] prog_waddr;                       // wbmux > pmux
+wire [`INSTR_WIDTH-1:0] prog_wdata;                    // wbmux > pmux
 
 // between wishbone multiplexer and io pads
-wire pads_we;                                         // wbmux > pads
-wire pads_waddr;                                      // wbmux > pads
-wire [`IO_PINS-1:0] pads_wdata;                       // wbmux > pads
+wire pads_we;                                          // wbmux > pads
+wire pads_waddr;                                       // wbmux > pads
+wire [`IO_PINS-1:0] pads_wdata;                        // wbmux > pads
 
 // between wishbone multiplexer and debugging multiplexer
-wire [`LOG_CORES-1:0] debug_sel;                      // wbmux > dmux
-wire [4:0] debug_addr;                                // wbmux > dmux
-wire debug_we;                                        // wbmux > dmux
-wire [`DATA_WIDTH-1:0] debug_wdata;                   // wbmux > dmux
-wire [`DATA_WIDTH-1:0] debug_rdata;                   // wbmux < dmux
+wire [`LOG_CORES-1:0] debug_sel;                       // wbmux > dmux
+wire [4:0] debug_addr;                                 // wbmux > dmux
+wire debug_we;                                         // wbmux > dmux
+wire [`DATA_WIDTH-1:0] debug_wdata;                    // wbmux > dmux
+wire [`DATA_WIDTH-1:0] debug_rdata;                    // wbmux < dmux
 
 // between wishbone multiplexer and entropy pool
-wire [`WB_WIDTH-1:0] entropy_word;                    // wbmux > ep
+wire [`WB_WIDTH-1:0] entropy_word;                     // wbmux > ep
 
 // between entropy pool and prng's
-wire entropy_bit;                                     // ep > prng
+wire entropy_bit;                                      // ep > prng
 
 // repeat for each cpu core
 generate genvar core;

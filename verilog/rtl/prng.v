@@ -5,19 +5,15 @@
 
 /*
 Pseudorandom number generator using a Fibonacci-style XNOR linear feedback shift register
-
-`PRNG_STATE_BITS = number of bits for prng state
-POLYNOMIAL = bit mask used for feedback, should be chosen so that the prng repeats ifself after 2^(`PRNG_STATE_BITS-1) cycles
-STATE_INIT = used to seed the prng on reset
-`DATA_WIDTH = number of bits shifted out every clock cycle
 */
 
 module prng (
    input clk,
    input rst_n,
-   input [`PRNG_STATE_BITS-1:0] polynomial,
-   input [`PRNG_STATE_BITS-1:0] state_init,
-   input entropy,    // optional external entropy for more randomness
+   input [`PRNG_STATE_BITS-1:0] polynomial,  // bit mask used for feedback, should be chosen so that
+                                             //   the prng repeats ifself after 2^(`PRNG_STATE_BITS-1) cycles
+   input [`PRNG_STATE_BITS-1:0] state_init,  // used to seed the prng on reset
+   input entropy,                            // optional external entropy for more randomness
    output [`DATA_WIDTH-1:0] random
 );
 

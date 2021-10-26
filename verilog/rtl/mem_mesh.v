@@ -6,45 +6,34 @@
 /*
 Generates a DFF RAM block for each core with a tree-like interconnect mesh between them
 
-Parameters:
-`CORES = number of cpu cores, also specifies the number of ram blocks
-`MEM_DEPTH = number of words per ram block
-`DATA_WIDTH = word size, number of bits per memory cell
-`ADDR_WIDTH = address bus width, should be clog2(`MEM_DEPTH)
-`LOG_CORES = number of spread layers, should be clog2(`CORES)
-`SPREAD_WIDTH = spread bus width, should be clog2(2+`LOG_CORES)
-`MEM_IO_PORTS = number of io ports, should be <= `MEM_DEPTH
-`MEM_IO_FIRST = memory cell mapped to the first io port
-`MEM_IO_LAST1 = memory cell mapped to the last io port + 1
-
 A value of wspread > 0 on write operations specifies that the same address should also be written in some
 other memory blocks. In particular, blocks whose number only differ in the lowest wspread bits are affected.
 If several simultaneous write operations affect the same memory cell, writes with higher wspread have
 priority. For writes having equal wspread the core with the lowest number wins.
 
-If addresses < IO_BUS_WIDTH are written with wspread > `LOG_CORES, wdata is also sent to the io bus.
+If addresses >= `MEM_IO_FIRST are written with wspread > `LOG_CORES, wdata is also sent to the io bus.
 Incoming data on the io bus is written to the respective cells with maximal spread (affecting all cores).
 */
 
 module mem_mesh (
-   input clk,                                   // clock signal
-   input rst_n,                                 // reset, active low
-   input [`CORES-1:0] we,                        // write enable
-   input [`CORES*`ADDR_WIDTH-1:0] waddr,          // write address
-   input [`CORES*`SPREAD_WIDTH-1:0] wspread,      // write spread
-   input [`CORES*`DATA_WIDTH-1:0] wdata,          // write data
-   input [`CORES*`ADDR_WIDTH-1:0] raddr,          // read address
-   output [`CORES*`DATA_WIDTH-1:0] rdata,         // read data
-   input [`MEM_IO_PORTS-1:0] io_active_in,           // is receiving data on io bus
-   output [`MEM_IO_PORTS-1:0] io_active_out,         // is sending data on io bus
+   input clk,                                         // clock signal
+   input rst_n,                                       // reset, active low
+   input [`CORES-1:0] we,                             // write enable
+   input [`CORES*`ADDR_WIDTH-1:0] waddr,              // write address
+   input [`CORES*`SPREAD_WIDTH-1:0] wspread,          // write spread
+   input [`CORES*`DATA_WIDTH-1:0] wdata,              // write data
+   input [`CORES*`ADDR_WIDTH-1:0] raddr,              // read address
+   output [`CORES*`DATA_WIDTH-1:0] rdata,             // read data
+   input [`MEM_IO_PORTS-1:0] io_active_in,            // is receiving data on io bus
+   output [`MEM_IO_PORTS-1:0] io_active_out,          // is sending data on io bus
    input [`MEM_IO_PORTS*`DATA_WIDTH-1:0] io_data_in,  // io bus input
    output [`MEM_IO_PORTS*`DATA_WIDTH-1:0] io_data_out // io bus output
 );
 
 reg [`DATA_WIDTH-1:0] mem[`CORES-1:0][`MEM_DEPTH-1:0];       // memory cells
-wire presel[`CORES-1:0][`MEM_DEPTH-1:0];                    // is address selected before spreading
-wire uspread[`CORES-1:0][`LOG_CORES+1-1:0];         // is spreading to layer
-wire postsel[`CORES-1:0][`MEM_DEPTH-1:0];                   // is address selected after spreading
+wire presel[`CORES-1:0][`MEM_DEPTH-1:0];                     // is address selected before spreading
+wire uspread[`CORES-1:0][`LOG_CORES+1-1:0];                  // is spreading to layer
+wire postsel[`CORES-1:0][`MEM_DEPTH-1:0];                    // is address selected after spreading
 wire [`DATA_WIDTH-1:0] postdata[`CORES-1:0][`MEM_DEPTH-1:0]; // data to be written after spreading
 
 generate genvar core, addr, layer, group, spl;

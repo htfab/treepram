@@ -5,11 +5,6 @@
 
 /*
 Connection to Caravel IO pads & logic analyzer
-
-IO_PINS = logical pins accessible for the program running on the cpu cores
-IO_PADS = pads made available by Caravel for user projects (maps to MPRJ_IO_PADS)
-LOGIC_PROBES = logic analyzer probes
-FIRST_PAD = map pin 0 to pad `FIRST_PAD, pin 1 to pad `FIRST_PAD+1 etc.
 */
 
 module io_pads (
@@ -46,10 +41,10 @@ assign rst_hard_n = la_oenb[1] ? !wb_rst_i : la_data_in[1];
 assign rst_soft_n = la_oenb[2] ? (!wb_rst_i & !programming) : la_data_in[2];
 assign rst_prng_n = la_oenb[3] ? !wb_rst_i : la_data_in[3];
 
-localparam LA_DIR = 4;                 // index of logic analyzer probes for pin directions
-localparam LA_PIN = LA_DIR + `IO_PINS;  // index of logic analyzer probes for pin values
-localparam LA_PAD = LA_PIN + `IO_PINS;  // index of logic analyzer probes for pad values
-localparam LA_END = LA_PAD + `IO_PADS;  // index of first unused logic analyzer probe
+localparam LA_DIR = 4;                       // index of logic analyzer probes for pin directions
+localparam LA_PIN = LA_DIR + `IO_PINS;       // index of logic analyzer probes for pin values
+localparam LA_PAD = LA_PIN + `IO_PINS;       // index of logic analyzer probes for pad values
+localparam LA_END = LA_PAD + `IO_PADS;       // index of first unused logic analyzer probe
 localparam LA_REM = `LOGIC_PROBES - LA_END;  // unused logic analyzer probes
 
 localparam PAD_REM = `IO_PADS - `IO_PINS - `FIRST_PAD;   // unused pads remaining after the last io pin

@@ -12,7 +12,7 @@ Queries or modifies registers and status flags.
 
 module debug_mux (
    input [`LOG_CORES-1:0] sel,                // controller interface
-   input [4:0] addr,                         // 0xxxx affects status register xxxx, 10000 affects running/stopped state
+   input [4:0] addr,                          // 0xxxx affects status register xxxx, 10000 affects running/stopped state
    input we,
    input [`DATA_WIDTH-1:0] wdata,
    output [`DATA_WIDTH-1:0] rdata,

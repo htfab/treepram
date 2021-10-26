@@ -99,12 +99,6 @@ Example opcodes to implement Random Access Machine instructions:
   100 000 1 00 0011 100 iiiiiiiiiiiiiiii
   011 010 1 01 0011 011 jjjjjjjjjjjjjjjj
 
-Parameters:
-DATA_WIDTH = processor word size
-PC_WIDTH = size of program counter, should be <= `DATA_WIDTH
-ADDR_WIDTH = size of mem_mesh addresses, should be <= `DATA_WIDTH
-SPREAD_WIDTH = size of mem_mesh spread value
-INSTR_WIDTH = combined size of opcode & immediate, should be kept at 32
 */
 
 module cpu_core (
@@ -130,15 +124,15 @@ module cpu_core (
 
 reg [`DATA_WIDTH-1:0] reg1;      // general-purpose registers
 reg [`DATA_WIDTH-1:0] reg2;
-reg carry;                      // carry flag
+reg carry;                       // carry flag
 reg [`DATA_WIDTH-1:0] pc;        // register for program counter
 reg [`DATA_WIDTH-1:0] timer;     // clock ticks since last reset
 reg [`ADDR_WIDTH-1:0] raddr;     // next read address
-reg we;                         // write to memory on next cycle
+reg we;                          // write to memory on next cycle
 reg [`ADDR_WIDTH-1:0] waddr;     // next write address
 reg [`SPREAD_WIDTH-1:0] wspread; // next write spread
 reg [`DATA_WIDTH-1:0] wdata;     // next write data
-reg stopped;                    // cpu core is stopped
+reg stopped;                     // cpu core is stopped
 
 assign progctr = pc;
 assign mem_we = we;
@@ -187,12 +181,12 @@ wire [`DATA_WIDTH-1:0] in1_orig = sources1[op_in1];                   // data to
 wire in1_oh = in1_orig[`DATA_WIDTH-1];                                // highest bit of in1_orig
 wire [`DATA_WIDTH-1:0] in1 = op_extra_carry ? op_immed : in1_orig;    // data to use as alu input 1
 wire [`DATA_WIDTH-1:0] in2 = sources2[op_in2];                        // data to use as alu input 2
-wire carry_def = op_rst_carry ? 0 : carry;                           // carry to use as alu input, unless overridden by op_extra_carry
-wire carry_ovr = op_rst_carry ? ~in1_oh : in1_oh;                    // override value if op_extra_carry is set
-wire alu_cin = op_extra_carry ? carry_ovr : carry_def;               // consolidated carry input for alu
+wire carry_def = op_rst_carry ? 0 : carry;                            // carry to use as alu input, unless overridden by op_extra_carry
+wire carry_ovr = op_rst_carry ? ~in1_oh : in1_oh;                     // override value if op_extra_carry is set
+wire alu_cin = op_extra_carry ? carry_ovr : carry_def;                // consolidated carry input for alu
 
 wire [`DATA_WIDTH-1:0] alu_out;                                       // data output from alu
-wire alu_cout;                                                       // carry output from alu
+wire alu_cout;                                                        // carry output from alu
 
 alu alu_inst (
    .opcode(op_alu),

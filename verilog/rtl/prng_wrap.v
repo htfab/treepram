@@ -6,7 +6,7 @@
 /*
 Wrapper for prng with known good polynomials (having a cycle length of 2^32-1 and a minimal bit count)
 
-Different choices of 0 <= INDEX < 256 generate independent prng's. For even more, the table below should be extended.
+Different choices of 0 <= index < 256 generate independent prng's. For even more, the table below should be extended.
 */
 
 module prng_wrap (
