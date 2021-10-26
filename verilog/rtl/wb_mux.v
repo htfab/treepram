@@ -56,11 +56,11 @@ wire valid = wbs_stb_i && wbs_cyc_i;
 assign wbs_ack_o = valid;
 
 // interface selection
-wire[1:0] interface = wbs_adr_i[`WB_WIDTH-2 +: 2];
-wire if_prog = valid && interface == 2'b00;
-wire if_pads = valid && interface == 2'b01;
-wire if_debug = valid && interface == 2'b10;
-wire if_entropy = valid && interface == 2'b11;
+wire[1:0] iface = wbs_adr_i[`WB_WIDTH-2 +: 2];
+wire if_prog = valid && iface == 2'b00;
+wire if_pads = valid && iface == 2'b01;
+wire if_debug = valid && iface == 2'b10;
+wire if_entropy = valid && iface == 2'b11;
 
 // programmer interface
 assign prog_we = if_prog && wbs_we_i;
