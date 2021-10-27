@@ -63,7 +63,7 @@ for (addr=0; addr<`MEM_DEPTH; addr=addr+1) begin:g_cell
             assign gsel[group] = presel[group][addr];
             assign gdata[group] = {(`DATA_WIDTH){we[group]}} & wdata[group*`DATA_WIDTH +: `DATA_WIDTH];
             for (spl=0; spl<=`LOG_CORES; spl=spl+1) begin:cspread
-               assign gspread[group][spl] = uspread[group][spl];
+               assign g_cell[addr].spread[layer].gspread[group][spl] = uspread[group][spl];
             end
          end
       end else begin:i_layernz
@@ -77,7 +77,7 @@ for (addr=0; addr<`MEM_DEPTH; addr=addr+1) begin:g_cell
             for (spl=0; spl<=`LOG_CORES-layer; spl=spl+1) begin:g_spread
                wire gsp1 = g_cell[addr].spread[layer-1].gspread[group*2][spl+1];
                wire gsp2 = g_cell[addr].spread[layer-1].gspread[group*2+1][spl+1];
-               assign g_cell[addr].gspread[group][spl] = gs1 ? gsp1 : gsp2;
+               assign g_cell[addr].spread[layer].gspread[group][spl] = gs1 ? gsp1 : gsp2;
             end
          end
       end
