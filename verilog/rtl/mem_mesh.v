@@ -68,16 +68,16 @@ for (addr=0; addr<`MEM_DEPTH; addr=addr+1) begin:g_cell
          end
       end else begin:i_layernz
          for (group=0; group<GROUPS; group=group+1) begin:g_group
-            wire gs1 = spread[layer-1].gsel[group*2] & spread[layer-1].gspread[group*2][0];
-            wire gs2 = spread[layer-1].gsel[group*2+1] & spread[layer-1].gspread[group*2+1][0];
-            wire [`DATA_WIDTH-1:0] gd1 = spread[layer-1].gdata[group*2];
-            wire [`DATA_WIDTH-1:0] gd2 = spread[layer-1].gdata[group*2+1];
+            wire gs1 = g_cell[addr].spread[layer-1].gsel[group*2] & g_cell[addr].spread[layer-1].gspread[group*2][0];
+            wire gs2 = g_cell[addr].spread[layer-1].gsel[group*2+1] & g_cell[addr].spread[layer-1].gspread[group*2+1][0];
+            wire [`DATA_WIDTH-1:0] gd1 = g_cell[addr].spread[layer-1].gdata[group*2];
+            wire [`DATA_WIDTH-1:0] gd2 = g_cell[addr].spread[layer-1].gdata[group*2+1];
             assign gsel[group] = gs1 | gs2;
             assign gdata[group] = gs1 ? gd1 : gd2;
             for (spl=0; spl<=`LOG_CORES-layer; spl=spl+1) begin:g_spread
-               wire gsp1 = spread[layer-1].gspread[group*2][spl+1];
-               wire gsp2 = spread[layer-1].gspread[group*2+1][spl+1];
-               assign gspread[group][spl] = gs1 ? gsp1 : gsp2;
+               wire gsp1 = g_cell[addr].spread[layer-1].gspread[group*2][spl+1];
+               wire gsp2 = g_cell[addr].spread[layer-1].gspread[group*2+1][spl+1];
+               assign g_cell[addr].gspread[group][spl] = gs1 ? gsp1 : gsp2;
             end
          end
       end
@@ -88,15 +88,15 @@ for (addr=0; addr<`MEM_DEPTH; addr=addr+1) begin:g_cell
    wire [`DATA_WIDTH-1:0] gd_i;
    if (`MEM_IO_FIRST <= addr && addr < `MEM_IO_LAST1) begin:i_io
       localparam io = addr - `MEM_IO_FIRST;
-      wire gs_o = spread[`LOG_CORES].gsel[0] & spread[`LOG_CORES].gspread[0][0];
-      wire [`DATA_WIDTH-1:0] gd_o = {(`DATA_WIDTH){gs_o}} & spread[`LOG_CORES].gdata[0];
+      wire gs_o = g_cell[addr].spread[`LOG_CORES].gsel[0] & g_cell[addr].spread[`LOG_CORES].gspread[0][0];
+      wire [`DATA_WIDTH-1:0] gd_o = {(`DATA_WIDTH){gs_o}} & g_cell[addr].spread[`LOG_CORES].gdata[0];
       assign io_active_out[io] = gs_o;
       assign io_data_out[io*`DATA_WIDTH +: `DATA_WIDTH] = gd_o;
-      assign gs_i = io_active_in[io] ? 1'b1 : spread[`LOG_CORES].gsel[0];
-      assign gd_i = io_active_in[io] ? io_data_in[io*`DATA_WIDTH +: `DATA_WIDTH] : spread[`LOG_CORES].gdata[0];
+      assign gs_i = io_active_in[io] ? 1'b1 : g_cell[addr].spread[`LOG_CORES].gsel[0];
+      assign gd_i = io_active_in[io] ? io_data_in[io*`DATA_WIDTH +: `DATA_WIDTH] : g_cell[addr].spread[`LOG_CORES].gdata[0];
    end else begin:i_nio
-      assign gs_i = spread[`LOG_CORES].gsel[0];
-      assign gd_i = spread[`LOG_CORES].gdata[0];
+      assign gs_i = g_cell[addr].spread[`LOG_CORES].gsel[0];
+      assign gd_i = g_cell[addr].spread[`LOG_CORES].gdata[0];
    end
 
    // calculate spreading back from groups of cores to individual cores
@@ -108,23 +108,23 @@ for (addr=0; addr<`MEM_DEPTH; addr=addr+1) begin:g_cell
          assign pgsel[0] = gs_i;
          assign pgdata[0] = gd_i;
          for (group=1; group<GROUPS; group=group+1) begin:g_group
-            assign pgsel[group] = spread[layer].gsel[group];
-            assign pgdata[group] = spread[layer].gdata[group];
+            assign pgsel[group] = g_cell[addr].spread[layer].gsel[group];
+            assign pgdata[group] = g_cell[addr].spread[layer].gdata[group];
          end
       end else begin:i_layernl
          for (group=0; group<GROUPS; group=group+1) begin:g_group
-            wire gs = spread[layer].gsel[group];
-            wire [`DATA_WIDTH-1:0] gd = spread[layer].gdata[group];
-            wire cgs = collect[layer+1].pgsel[group/2];
-            wire [`DATA_WIDTH-1:0] cgd = collect[layer+1].pgdata[group/2];
+            wire gs = g_cell[addr].spread[layer].gsel[group];
+            wire [`DATA_WIDTH-1:0] gd = g_cell[addr].spread[layer].gdata[group];
+            wire cgs = g_cell[addr].collect[layer+1].pgsel[group/2];
+            wire [`DATA_WIDTH-1:0] cgd = g_cell[addr].collect[layer+1].pgdata[group/2];
             assign pgsel[group] = cgs | gs;
             assign pgdata[group] = cgs ? cgd : gd;
          end
       end
    end
    for (core=0; core<`CORES; core=core+1) begin:g_core_c
-      assign postsel[core][addr] = collect[0].pgsel[core];
-      assign postdata[core][addr] = collect[0].pgdata[core];
+      assign postsel[core][addr] = g_cell[addr].collect[0].pgsel[core];
+      assign postdata[core][addr] = g_cell[addr].collect[0].pgdata[core];
    end
 
    // sequential write logic
