@@ -67,7 +67,7 @@ assign io_out = (la_oenb[LA_PAD +: `IO_PADS] & {{(PAD_REM){1'b0}}, pin_dir & pin
                 (~la_oenb[LA_PAD +: `IO_PADS] & la_data_in[LA_PAD +: `IO_PADS]);
 
 // logic analyzer probes can also read back the same signals and values
-assign la_data_out[0] = clk;
+assign la_data_out[0] = wb_clk_i;
 assign la_data_out[1] = rst_hard_n;
 assign la_data_out[2] = rst_soft_n;
 assign la_data_out[3] = rst_prng_n;
