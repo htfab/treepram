@@ -51,7 +51,24 @@ set ::env(MACRO_PLACEMENT_CFG) $script_dir/macro.cfg
 ### Black-box verilog and views
 set ::env(VERILOG_FILES_BLACKBOX) "\
 	$::env(CARAVEL_ROOT)/verilog/rtl/defines.v \
-	$script_dir/../../verilog/rtl/user_project.v"
+	$script_dir/../../verilog/rtl/defines.v \
+	$script_dir/../../verilog/rtl/user_project.v \
+	$script_dir/../../verilog/rtl/mcu.v \
+	$script_dir/../../verilog/rtl/cpu_core.v \
+	$script_dir/../../verilog/rtl/alu.v \
+	$script_dir/../../verilog/rtl/instr_mem.v \
+	$script_dir/../../verilog/rtl/prng_wrap.v \
+	$script_dir/../../verilog/rtl/prng.v \
+	$script_dir/../../verilog/rtl/mem_mesh.v \
+	$script_dir/../../verilog/rtl/io_filter_rev.v \
+	$script_dir/../../verilog/rtl/io_filter.v \
+	$script_dir/../../verilog/rtl/pin_compress.v \
+	$script_dir/../../verilog/rtl/pin_decompress.v \
+	$script_dir/../../verilog/rtl/prog_mux.v \
+	$script_dir/../../verilog/rtl/debug_mux.v \
+	$script_dir/../../verilog/rtl/entropy_pool.v \
+	$script_dir/../../verilog/rtl/wb_mux.v \
+	$script_dir/../../verilog/rtl/io_pads.v"
 
 set ::env(EXTRA_LEFS) "\
 	$script_dir/../../lef/user_project.lef"
