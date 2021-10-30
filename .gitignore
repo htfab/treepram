@@ -3,3 +3,6 @@ precheck_results
 *.swp
 caravel
 pdk
+openlane/Makefile
+openlane/user_project_wrapper/pin_order.cfg
+verilog/dv/*/verify.log
