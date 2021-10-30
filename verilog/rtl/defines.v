@@ -4,7 +4,7 @@
 `default_nettype none
 
 // number of cpu cores
-`define CORES 4
+`define CORES 16
 
 // number of memory mesh cells per cpu core
 `define MEM_DEPTH 32
@@ -16,7 +16,7 @@
 `define INSTR_DEPTH 16
 
 // number of io pins usable by code on cpu cores
-`define IO_PINS 16
+`define IO_PINS 24
 
 // map io pin 0 to caravel io pad `FIRST_PAD
 `define FIRST_PAD 12
