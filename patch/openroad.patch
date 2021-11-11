@@ -1,0 +1,386 @@
+From 61ad3d1b4db4182e5d2145b3e4b7c2ac830404aa Mon Sep 17 00:00:00 2001
+From: Tamas Hubai <mpw@htamas.net>
+Date: Thu, 11 Nov 2021 01:04:51 +0100
+Subject: [PATCH] Add the `decap_filler_placement` command
+
+---
+ src/dpl/CMakeLists.txt               |   1 +
+ src/dpl/README.md                    |   6 +
+ src/dpl/include/dpl/Opendp.h         |  16 ++
+ src/dpl/src/DecapFillerPlacement.cpp | 233 +++++++++++++++++++++++++++
+ src/dpl/src/Opendp.i                 |  10 ++
+ src/dpl/src/Opendp.tcl               |  19 +++
+ 6 files changed, 285 insertions(+)
+ create mode 100644 src/dpl/src/DecapFillerPlacement.cpp
+
+diff --git a/src/dpl/CMakeLists.txt b/src/dpl/CMakeLists.txt
+index 071141412..39dc8c955 100644
+--- a/src/dpl/CMakeLists.txt
++++ b/src/dpl/CMakeLists.txt
+@@ -53,6 +53,7 @@ target_sources(dpl
+     src/CheckPlacement.cpp
+     src/Place.cpp
+     src/FillerPlacement.cpp
++    src/DecapFillerPlacement.cpp
+     src/OptMirror.cpp
+     src/Graphics.cpp
+ )
+diff --git a/src/dpl/README.md b/src/dpl/README.md
+index 59d6cff08..3e0379ebe 100644
+--- a/src/dpl/README.md
++++ b/src/dpl/README.md
+@@ -23,6 +23,7 @@ set_placement_padding -global|-instances insts|-masters masters
+ detailed_placement [-max_displacement disp|{disp_x disp_y}]
+ check_placement [-verbose]
+ filler_placement [-prefix prefix] filler_masters
++decap_filler_placement [-prefix prefix] decap_masters filler_masters decap_percent
+ optimize_mirroring
+ ```
+ 
+@@ -52,6 +53,11 @@ is supported, so `FILL*` will match, e.g., `FILLCELL_X1 FILLCELL_X16 FILLCELL_X2
+ FILLCELL_X32 FILLCELL_X4 FILLCELL_X8`.  To specify a different naming prefix
+ from `FILLER_` use `-prefix <new prefix>`.
+ 
++The `decap_filler_placement` command is similar to `filler_placement` but
++uses two separate lists for decap and filler masters and tries to fill
++`decap_percent`/100 of the total gap area with decap cells and the rest
++with filler cells.
++
+ The `optimize_mirroring` command mirrors instances about the Y axis in
+ a weak attempt to reduce total wirelength (HPWL).
+ 
+diff --git a/src/dpl/include/dpl/Opendp.h b/src/dpl/include/dpl/Opendp.h
+index c561b94c3..7daa46d98 100644
+--- a/src/dpl/include/dpl/Opendp.h
++++ b/src/dpl/include/dpl/Opendp.h
+@@ -204,6 +204,10 @@ public:
+   int checkPlacement(bool verbose);
+   void fillerPlacement(dbMasterSeq *filler_masters,
+                        const char* prefix);
++  void decapFillerPlacement(dbMasterSeq *decap_masters,
++                      dbMasterSeq *filler_masters,
++                      int decap_percent,
++                      const char* prefix);
+   int64_t hpwl() const;
+   int64_t hpwl(dbNet *net) const;
+   void findDisplacementStats();
+@@ -385,6 +389,15 @@ private:
+   void placeRowFillers(int row,
+                        const char* prefix,
+                        dbMasterSeq *filler_masters);
++  dbMasterSeq gapDecapFillers(int gap,
++                          dbMasterSeq *decap_masters,
++                          dbMasterSeq *filler_masters,
++                          int decap_percent);
++  void placeRowDecapFillers(int row,
++                       const char* prefix,
++                       dbMasterSeq *decap_masters,
++                       dbMasterSeq *filler_masters,
++                       int decap_percent);
+   const char *gridInstName(int row,
+                            int col);
+ 
+@@ -432,7 +445,10 @@ private:
+   // Filler placement.
+   // gap (in sites) -> seq of masters
+   GapFillers gap_fillers_;
++  int decap_count_;
++  int decap_total_width_;
+   int filler_count_;
++  int filler_total_width_;
+ 
+   // Results saved for optional reporting.
+   int64_t hpwl_before_;
+diff --git a/src/dpl/src/DecapFillerPlacement.cpp b/src/dpl/src/DecapFillerPlacement.cpp
+new file mode 100644
+index 000000000..0cb2d46dd
+--- /dev/null
++++ b/src/dpl/src/DecapFillerPlacement.cpp
+@@ -0,0 +1,233 @@
++/////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2020, The Regents of the University of California
++// Copyright (c) 2021, Tamas Hubai
++// All rights reserved.
++//
++// BSD 3-Clause License
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// * Redistributions of source code must retain the above copyright notice, this
++//   list of conditions and the following disclaimer.
++//
++// * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//
++// * Neither the name of the copyright holder nor the names of its
++//   contributors may be used to endorse or promote products derived from
++//   this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++// POSSIBILITY OF SUCH DAMAGE.
++///////////////////////////////////////////////////////////////////////////////
++
++#include "dpl/Opendp.h"
++
++#include <algorithm>
++#include "utl/Logger.h"
++
++namespace dpl {
++
++using std::max;
++using std::min;
++using std::to_string;
++
++using utl::DPL;
++
++using odb::dbLib;
++using odb::dbMaster;
++using odb::dbPlacementStatus;
++
++void
++Opendp::decapFillerPlacement(dbMasterSeq *decap_masters,
++                        dbMasterSeq *filler_masters,
++                        int decap_percent,
++                        const char* prefix)
++{
++  if (cells_.empty())
++    importDb();
++
++  std::sort(decap_masters->begin(),
++            decap_masters->end(),
++            [](dbMaster *master1, dbMaster *master2) {
++              return master1->getWidth() > master2->getWidth();
++            });
++  std::sort(filler_masters->begin(),
++            filler_masters->end(),
++            [](dbMaster *master1, dbMaster *master2) {
++              return master1->getWidth() > master2->getWidth();
++            });
++
++  decap_count_ = 0;
++  decap_total_width_ = 0;
++  filler_count_ = 0;
++  filler_total_width_ = 0;
++  initGrid();
++  setGridCells();
++
++  for (int row = 0; row < row_count_; row++)
++    placeRowDecapFillers(row, prefix, decap_masters, filler_masters, decap_percent);
++
++  logger_->info(DPL, 101, "Placed {} decap instances with total width {}.", decap_count_, decap_total_width_);
++  logger_->info(DPL, 102, "Placed {} filler instances with total width {}.", filler_count_, filler_total_width_);
++}
++
++/*void
++Opendp::setGridCells()
++{
++  for (Cell &cell : cells_)
++    visitCellPixels(cell, false,
++                    [&] (Pixel *pixel) { setGridCell(cell, pixel); } );
++}*/
++
++void
++Opendp::placeRowDecapFillers(int row,
++                        const char* prefix,
++                        dbMasterSeq *decap_masters,
++                        dbMasterSeq *filler_masters,
++                        int decap_percent)
++{
++  dbOrientType orient = rowOrient(row);
++  int j = 0;
++  while (j < row_site_count_) {
++    Pixel *pixel = gridPixel(j, row);
++    if (pixel->cell == nullptr
++        && pixel->is_valid) {
++      int k = j;
++      while (k < row_site_count_
++             && gridPixel(k, row)->cell == nullptr
++             && gridPixel(k, row)->is_valid) {
++        k++;
++      }
++      int gap = k - j;
++      // printf("filling row %d gap %d %d:%d\n", row, gap, j, k - 1);
++      dbMasterSeq fillers = gapDecapFillers(gap, decap_masters, filler_masters, decap_percent);
++      if (fillers.empty()) {
++        int x = core_.xMin() + j * site_width_;
++        int y = core_.yMin() + row * row_height_;
++        logger_->error(DPL, 103,
++                       "could not fill gap of size {} at {},{} dbu between {} and {}",
++                       gap, x, y,
++                       gridInstName(row, j - 1),
++                       gridInstName(row, k + 1));
++      }
++      else {
++        k = j;
++        for (dbMaster *master : fillers) {
++          string inst_name = prefix + to_string(row) + "_" + to_string(k);
++          // printf(" filler %s %d\n", inst_name.c_str(), master->getWidth() /
++          // site_width_);
++          dbInst *inst = dbInst::create(block_, master, inst_name.c_str());
++          int x = core_.xMin() + k * site_width_;
++          int y = core_.yMin() + row * row_height_;
++          inst->setOrient(orient);
++          inst->setLocation(x, y);
++          inst->setPlacementStatus(dbPlacementStatus::PLACED);
++          k += master->getWidth() / site_width_;
++        }
++        j += gap;
++      }
++    }
++    else {
++      j++;
++    }
++  }
++}
++
++/*const char *
++Opendp::gridInstName(int row,
++                     int col)
++{
++  if (col < 0)
++    return "core_left";
++  else if (col > row_site_count_)
++    return "core_right";
++  else {
++    const Cell *cell = gridPixel(col, row)->cell;
++    if (cell)
++      return cell->db_inst_->getConstName();
++  }
++  return "?";
++}*/
++
++// Return list of masters to fill gap (in site width units).
++dbMasterSeq
++Opendp::gapDecapFillers(int gap,
++                   dbMasterSeq *decap_masters,
++                   dbMasterSeq *filler_masters,
++                   int decap_percent)
++{
++  dbMasterSeq fillers;
++  int width = 0;
++  dbMaster *smallest_decap = (*decap_masters)[decap_masters->size() - 1];
++  dbMaster *smallest_filler = (*filler_masters)[filler_masters->size() - 1];
++  bool have_filler1 = (smallest_decap->getWidth() == site_width_) || (smallest_filler->getWidth() == site_width_);
++
++  dbMasterSeq::iterator decap_it = decap_masters->begin();
++  dbMasterSeq::iterator filler_it = filler_masters->begin();
++
++  while (decap_it != decap_masters->end() && filler_it != filler_masters->end()) {
++
++    bool prefer_decap = (decap_total_width_ * 100 < (decap_total_width_ + filler_total_width_) * decap_percent);
++
++    for (int i=0; i<2; ++i) {
++      bool use_decap = prefer_decap ^ i;
++
++      if (use_decap) {
++
++        int decap_width = (*decap_it)->getWidth() / site_width_;
++        while ((width + decap_width) > gap || (!have_filler1 && (width + decap_width == gap - 1))) {
++          ++decap_it;
++          if (decap_it == decap_masters->end()) break;
++          decap_width = (*decap_it)->getWidth() / site_width_;
++        }
++        if (decap_it != decap_masters->end()) {
++          fillers.push_back(*decap_it);
++          width += decap_width;
++          decap_count_++;
++          decap_total_width_ += decap_width;
++          if (width == gap) return fillers;
++          break;
++        }
++        
++      } else {
++
++        int filler_width = (*filler_it)->getWidth() / site_width_;
++        while ((width + filler_width) > gap || (!have_filler1 && (width + filler_width == gap - 1))) {
++          ++filler_it;
++          if (filler_it == filler_masters->end()) break;
++          filler_width = (*filler_it)->getWidth() / site_width_;
++        }
++        if (filler_it != filler_masters->end()) {
++          fillers.push_back(*filler_it);
++          width += filler_width;
++          filler_count_++;
++          filler_total_width_ += filler_width;
++          if (width == gap) return fillers;
++          break;
++        }
++
++      }
++
++    }
++
++  }
++
++  // Fail. Return empty fillers.
++  fillers.clear();
++  return fillers;
++}
++
++}  // namespace opendp
+diff --git a/src/dpl/src/Opendp.i b/src/dpl/src/Opendp.i
+index 7032d9449..402f08de4 100644
+--- a/src/dpl/src/Opendp.i
++++ b/src/dpl/src/Opendp.i
+@@ -147,6 +147,16 @@ filler_placement_cmd(dpl::dbMasterSeq *filler_masters,
+   opendp->fillerPlacement(filler_masters, prefix);
+ }
+ 
++void
++decap_filler_placement_cmd(dpl::dbMasterSeq *decap_masters,
++                     dpl::dbMasterSeq *filler_masters,
++                     int decap_percent,
++                     const char* prefix)
++{
++  dpl::Opendp *opendp = ord::OpenRoad::openRoad()->getOpendp();
++  opendp->decapFillerPlacement(decap_masters, filler_masters, decap_percent, prefix);
++}
++
+ void
+ optimize_mirroring_cmd()
+ {
+diff --git a/src/dpl/src/Opendp.tcl b/src/dpl/src/Opendp.tcl
+index 4087e0c84..1d021f6dc 100644
+--- a/src/dpl/src/Opendp.tcl
++++ b/src/dpl/src/Opendp.tcl
+@@ -127,6 +127,25 @@ proc filler_placement { args } {
+   dpl::filler_placement_cmd $filler_masters $prefix
+ }
+ 
++sta::define_cmd_args "decap_filler_placement" { [-prefix prefix] decap_masters filler_masters decap_percent }
++
++proc decap_filler_placement { args } {
++  sta::parse_key_args "decap_filler_placement" args \
++    keys {-prefix} flags {}
++
++  set prefix "FILLER_"
++  if { [info exists keys(-prefix)] } {
++    set prefix $keys(-prefix)
++  }
++
++  sta::check_argc_eq3 "decap_filler_placement" $args
++  set decap_masters [dpl::get_masters_arg "decap_masters" [lindex $args 0]]
++  set filler_masters [dpl::get_masters_arg "filler_masters" [lindex $args 1]]
++  set decap_percent [lindex $args 2]
++  sta::check_positive_integer "decap_percent" $decap_percent
++  dpl::decap_filler_placement_cmd $decap_masters $filler_masters $decap_percent $prefix
++}
++
+ sta::define_cmd_args "check_placement" {[-verbose]}
+ 
+ proc check_placement { args } {
+-- 
+2.33.1
+

@@ -1,0 +1,28 @@
+From 55265da8658b56b885958a92f6e57bac29e52feb Mon Sep 17 00:00:00 2001
+From: Tamas Hubai <mpw@htamas.net>
+Date: Thu, 11 Nov 2021 01:30:48 +0100
+Subject: [PATCH] Use decap_filler_placement if DECAP_PERCENT is set
+
+---
+ scripts/openroad/or_fill.tcl | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/openroad/or_fill.tcl b/scripts/openroad/or_fill.tcl
+index 80d424c..84cf761 100755
+--- a/scripts/openroad/or_fill.tcl
++++ b/scripts/openroad/or_fill.tcl
+@@ -21,6 +21,10 @@ if {[catch {read_def $::env(CURRENT_DEF)} errmsg]} {
+     exit 1
+ }
+ 
+-filler_placement "$::env(DECAP_CELL) $::env(FILL_CELL)"
++if {[info exists ::env(DECAP_PERCENT)]} {
++    decap_filler_placement "$::env(DECAP_CELL)" "$::env(FILL_CELL)" "$::env(DECAP_PERCENT)"
++} else {
++    filler_placement "$::env(DECAP_CELL) $::env(FILL_CELL)"
++}
+ 
+ write_def $::env(SAVE_DEF)
+-- 
+2.33.1
+
