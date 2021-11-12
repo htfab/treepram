@@ -55,7 +55,7 @@ set ::env(FP_PIN_ORDER_CFG) $script_dir/pin_order.cfg
 set ::env(PL_TARGET_DENSITY) 0.288
 
 # This requires a patched openroad & openlane, see the "patch" directory at the repo root
-set ::env(DECAP_PERCENT) 50
+set ::env(DECAP_PERCENT) 75
 
 # Maximum layer used for routing is metal 4.
 # This is because this macro will be inserted in a top level (user_project_wrapper) 
